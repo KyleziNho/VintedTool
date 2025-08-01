@@ -51,7 +51,7 @@ python vinted_scraper.py --all="user url"
 
 ## 🎥 Video Tutorial
 A video tutorial is available here:
-[![Vinted Scraper Tutorial](https://drive.google.com/file/d/1JFcxPqDnn5nXUxC_WboQ7v72JizSyc6e/view?usp=drive_link)
+[Vinted Scraper Tutorial](https://drive.google.com/file/d/1JFcxPqDnn5nXUxC_WboQ7v72JizSyc6e/view?usp=drive_link)
 
 ## ⚠️ Disclaimer
 Disclaimer: This Vinted downloader was created to help users back up their own listings for personal reuploading purposes. 
