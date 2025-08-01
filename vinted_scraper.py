@@ -16,6 +16,29 @@ from urllib.parse import urlparse, urljoin
 def sanitize_filename(name):
     """Remove invalid characters from folder name"""
     return re.sub(r'[<>:"/\\|?*]', '', name).strip()
+def is_valid_vinted_url(url):
+    """Check if URL is a valid Vinted item or user URL"""
+    parsed = urlparse(url)
+    if not parsed.scheme in ('http', 'https'):
+        return False
+    
+    # Check domain
+    if 'vinted.' not in parsed.netloc:
+        return False
+    
+    # Check path patterns
+    path = parsed.path.lower()
+    return any(
+        path.startswith(p) 
+        for p in ('/items/', '/member/', '/catalog/', '/user/')
+    )
+
+def validate_url(url):
+    """Ensure URL is properly formatted"""
+    url = url.strip()
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+    return url if is_valid_vinted_url(url) else None
 
 def extract_article_name(driver):
     """Extract article name from page title in HTML with fallback to unique URL-based name"""
@@ -376,6 +399,38 @@ def download_images(item_url, is_bulk=False, base_folder=""):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Download images from Vinted listings')
+    parser.add_argument('--item', help='Vinted item URL (single item)')
+    parser.add_argument('--all', help='Vinted user URL to download all items')
+    args = parser.parse_args()
+
+    try:
+        if args.all:
+            validated_url = validate_url(args.all)
+            if not validated_url:
+                print("❌ Invalid Vinted user URL. Expected format: https://www.vinted.com/member/username")
+                exit(1)
+                
+            print(f"♻️ Loading all infos... i promise it will be worth it! 💤\n")
+            # Rest of your existing code...
+            
+        elif args.item:
+            validated_url = validate_url(args.item)
+            if not validated_url:
+                print("❌ Invalid Vinted item URL. Expected format: https://www.vinted.com/items/item-id")
+                exit(1)
+            download_images(validated_url, is_bulk=False)
+            
+        else:
+            print("⚠️ Please specify --item <URL> or --all <USER URL>")
+            print("\nUsage examples:")
+            print("  Single item: python vinted_scraper.py --item=\"https://www.vinted.com/items/1234567890-dress\"")
+            print("  User profile: python vinted_scraper.py --all=\"https://www.vinted.com/member/username\"")
+            
+    except KeyboardInterrupt:
+        print("\n🛑 Operation cancelled by user")
+    except Exception as e:
+        print(f"\n❌ Critical error: {str(e)}")
     parser = argparse.ArgumentParser(description='Download images from Vinted listings')
     parser.add_argument('--item', help='Vinted item URL (single item)')
     parser.add_argument('--all', help='Vinted user URL to download all items')
