@@ -50,7 +50,7 @@ def extract_article_name(driver):
             )
         )
         title = title_element.text.strip()
-        print(f"✅ Extracted title: {title}")
+        print(f"✅ Extracted title:  {title}")
         return title
     except:
         print(f"❌ Could not extract title from HTML, falling back to URL method")
