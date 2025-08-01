@@ -48,6 +48,11 @@ python vinted_scraper.py --item="item url"
 ```bash
 python vinted_scraper.py --all="user url"
 ```
+
+## 🎥 Video Tutorial
+A video tutorial is available here:
+[![Vinted Scraper Tutorial](https://drive.google.com/file/d/1JFcxPqDnn5nXUxC_WboQ7v72JizSyc6e/view?usp=drive_link)
+
 ## ⚠️ Disclaimer
 Disclaimer: This Vinted downloader was created to help users back up their own listings for personal reuploading purposes. 
 It is not intended for unauthorized scraping, redistribution, or commercial use. I do not endorse or take responsibility for any misuse of this tool. 
