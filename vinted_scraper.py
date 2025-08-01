@@ -396,13 +396,35 @@ def download_images(item_url, is_bulk=False, base_folder=""):
     finally:
         driver.quit()
         print(f"\n 👔 {article_name}, informations and images downloaded successfully! 🎉\n")
-
-
+        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Download images from Vinted listings')
     parser.add_argument('--item', help='Vinted item URL (single item)')
     parser.add_argument('--all', help='Vinted user URL to download all items')
     args = parser.parse_args()
+
+    def check_url_accessible(url):
+        """Check if URL exists and is accessible"""
+        try:
+            driver = setup_driver()
+            driver.get(url)
+            time.sleep(2)  # Wait for page to load
+            
+            # Check for 404 page
+            if "404" in driver.title.lower() or "not found" in driver.title.lower():
+                return False
+                
+            # Check for Vinted's error message
+            error_elements = driver.find_elements(By.CSS_SELECTOR, ".web_ui__Alert__content")
+            if error_elements and "not exist" in error_elements[0].text.lower():
+                return False
+                
+            return True
+        except Exception as e:
+            print(f"❌ Error checking URL: {str(e)}")
+            return False
+        finally:
+            driver.quit()
 
     try:
         if args.all:
@@ -411,14 +433,48 @@ if __name__ == "__main__":
                 print("❌ Invalid Vinted user URL. Expected format: https://www.vinted.com/member/username")
                 exit(1)
                 
+            if not check_url_accessible(validated_url):
+                print("❌ User profile not found or inaccessible")
+                exit(1)
+                
             print(f"♻️ Loading all infos... i promise it will be worth it! 💤\n")
-            # Rest of your existing code...
+            driver = setup_driver()
+            driver.get(validated_url)
+            time.sleep(2)
+            username, profile_pic_url = get_profile_info(driver)
+            
+            if not username:
+                print("❌ Could not find user profile information")
+                exit(1)
+                
+            print(f"💤 Fetching all item URLs from user: {username}")
+            username, profile_pic_url, item_urls = get_all_item_urls(validated_url)
+            
+            if username and profile_pic_url:
+                profile_folder = download_profile_pic(username, profile_pic_url)
+                base_folder = username
+            else:
+                base_folder = ""
+                
+            total_items = len(item_urls)
+            print(f"♻️ Starting download of {total_items} items...\nGrab a coffee and chill ☕️ 🥱, this may take a while... 💤\n")
+                
+            for index, url in enumerate(item_urls, start=1):
+                print(f"\n♻️ Downloading {index} of {total_items} articles:")
+                download_images(url, is_bulk=True, base_folder=base_folder)
+
+            print(f"\nThanks for using Vinted Scraper! 🎉\n")
             
         elif args.item:
             validated_url = validate_url(args.item)
             if not validated_url:
                 print("❌ Invalid Vinted item URL. Expected format: https://www.vinted.com/items/item-id")
                 exit(1)
+                
+            if not check_url_accessible(validated_url):
+                print("❌ Item not found (404 error) or inaccessible")
+                exit(1)
+                
             download_images(validated_url, is_bulk=False)
             
         else:
@@ -431,40 +487,3 @@ if __name__ == "__main__":
         print("\n🛑 Operation cancelled by user")
     except Exception as e:
         print(f"\n❌ Critical error: {str(e)}")
-    parser = argparse.ArgumentParser(description='Download images from Vinted listings')
-    parser.add_argument('--item', help='Vinted item URL (single item)')
-    parser.add_argument('--all', help='Vinted user URL to download all items')
-    args = parser.parse_args()
-
-    if args.all:
-        print(f"♻️ Loading all infos... i promise it will be worth it! 💤\n")
-        driver = setup_driver()
-        driver.get(args.all)
-        time.sleep(2)
-        # Get profile info first
-        username, profile_pic_url = get_profile_info(driver)
-
-        print(f"💤 Fetching all item URLs from user: {username}")
-
-        # Get all item URLs for the user
-        username, profile_pic_url, item_urls = get_all_item_urls(args.all)
-        
-        # Download profile pic once at the beginning
-        if username and profile_pic_url:
-            profile_folder = download_profile_pic(username, profile_pic_url)
-            base_folder = username
-        else:
-            base_folder = ""
-        total_items = len(item_urls)
-        print(f"♻️ Starting download of {total_items} items...\nGrab a coffee and chill ☕️ 🥱, this may take a while... 💤\n")
-            
-        for index, url in enumerate(item_urls, start=1):
-            print(f"\n♻️ Downloading {index} of {total_items} articles:")
-            download_images(url, is_bulk=True, base_folder=base_folder)
-
-        print(f"\nThanks for using Vinted Scraper! 🎉\n")
-    
-    elif args.item:
-        download_images(args.item, is_bulk=False)
-    else:
-        print("⚠️ Please specify --item <URL> or --all <USER URL>")
