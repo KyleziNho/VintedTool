@@ -10,7 +10,7 @@
 
 ## ⚙️ Setup (1 Minute)
 
-### 🐈‍⬛
+### 🐈‍⬛ Open Terminal and run following commands:
 ```bash
 git clone https://github.com/im-sofaking/vinted-scraper.git
 cd vinted-scraper
