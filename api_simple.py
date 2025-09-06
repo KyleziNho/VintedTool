@@ -130,9 +130,17 @@ def home():
         'message': 'Vinted Scraper API (Simple Version)',
         'endpoints': {
             '/health': 'Health check',
-            '/user/<username>': 'Get user profile info',
-            '/user/<username>/items': 'Get user items',
-            '/scrape/<username>': 'Get user profile and all items'
+            '/scrape': 'POST - Scrape user profile with vinted_scraper.py (send JSON: {"url": "https://www.vinted.co.uk/member/..."})',
+            '/user/<username>': 'Get user profile info (deprecated)',
+            '/user/<username>/items': 'Get user items (deprecated)',
+            '/scrape/<username>': 'Deprecated - use POST /scrape instead'
+        },
+        'example': {
+            'method': 'POST',
+            'url': '/scrape',
+            'body': {
+                'url': 'https://www.vinted.co.uk/member/140641606'
+            }
         }
     })
 
@@ -170,43 +178,74 @@ def get_user_items_endpoint(username):
     else:
         return jsonify(items_result), 500
 
+@app.route('/scrape', methods=['POST'])
+def scrape_user():
+    """Get complete user data including all items using vinted_scraper.py"""
+    data = request.get_json()
+    if not data or 'url' not in data:
+        return jsonify({
+            'success': False,
+            'error': 'URL is required in request body'
+        }), 400
+    
+    url = data['url']
+    
+    # Validate URL format
+    if 'vinted.' not in url or '/member/' not in url:
+        return jsonify({
+            'success': False,
+            'error': 'Invalid Vinted profile URL format'
+        }), 400
+    
+    try:
+        # Run the vinted_scraper.py script
+        import subprocess
+        import os
+        
+        # Get the directory of the current script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        scraper_path = os.path.join(script_dir, 'vinted_scraper.py')
+        
+        # Run the scraper with --all flag
+        result = subprocess.run(
+            ['python3', scraper_path, '--all', url],
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout
+        )
+        
+        if result.returncode == 0:
+            return jsonify({
+                'success': True,
+                'message': 'Scraping completed successfully',
+                'output': result.stdout,
+                'url': url
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Scraping failed',
+                'details': result.stderr
+            }), 500
+            
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'success': False,
+            'error': 'Scraping timeout (>5 minutes)'
+        }), 408
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Internal error: {str(e)}'
+        }), 500
+
 @app.route('/scrape/<username>', methods=['GET'])
-def scrape_user(username):
-    """Get complete user data including all items"""
-    # Get user info
-    user_result = get_vinted_user_data(username)
-    if not user_result['success']:
-        return jsonify(user_result), 404
-    
-    user_id = user_result['user']['id']
-    all_products = []
-    page = 1
-    
-    # Fetch all pages of items
-    while True:
-        items_result = get_user_items(user_id, page)
-        if not items_result['success']:
-            break
-        
-        all_products.extend(items_result['products'])
-        
-        # Check if there are more pages
-        pagination = items_result.get('pagination', {})
-        if page >= pagination.get('total_pages', 1):
-            break
-        
-        page += 1
-        
-        # Limit to prevent too many requests
-        if page > 10:  # Max 200 items (20 per page * 10 pages)
-            break
-    
+def scrape_user_deprecated(username):
+    """Deprecated: Use POST /scrape with URL instead"""
     return jsonify({
-        'success': True,
-        'user': user_result['user'],
-        'products': all_products,
-        'count': len(all_products)
-    })
+        'success': False,
+        'error': 'This endpoint is deprecated. Use POST /scrape with {"url": "https://www.vinted.co.uk/member/..."}'
+    }), 410
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
