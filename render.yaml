@@ -3,7 +3,7 @@ services:
     name: vinted-scraper-api
     env: python
     buildCommand: pip install -r requirements.txt && python setup.py
-    startCommand: gunicorn api:app
+    startCommand: gunicorn api_simple:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
